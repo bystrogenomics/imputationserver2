@@ -1,7 +1,6 @@
 import groovy.json.JsonOutput
 
 process INPUT_VALIDATION_VCF {
-    
     label 'preprocessing'
     publishDir params.output, mode: 'copy', pattern: '*.{html,log}'
 

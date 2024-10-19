@@ -54,22 +54,22 @@ files.ifEmpty {
 params.refpanel.sites_pattern = "${params.refpanel.sites}"
 params.refpanel.sites = "./${file(params.refpanel.sites).fileName}"
 
-site_files_ch = Channel.of(1..22, 'X', 'MT')
-    .map {
-        it -> 
-            def sites_file = file(PatternUtil.parse(params.refpanel.sites_pattern, [chr: it]))
-            def sites_file_index = file(PatternUtil.parse(params.refpanel.sites_pattern+ ".tbi", [chr: it]))
+// site_files_ch = Channel.of(1..22, 'X', 'MT')
+//     .map {
+//         it -> 
+//             def sites_file = file(PatternUtil.parse(params.refpanel.sites_pattern, [chr: it]))
+//             def sites_file_index = file(PatternUtil.parse(params.refpanel.sites_pattern+ ".tbi", [chr: it]))
             
-            if(!sites_file.exists()){
-                return null;
-            }  
+//             if(!sites_file.exists()){
+//                 return null;
+//             }  
 
-            if(sites_file.exists() && !sites_file_index.exists()){
-                error "Missing tabix index for " + sites_file
-            }  
+//             if(sites_file.exists() && !sites_file_index.exists()){
+//                 error "Missing tabix index for " + sites_file
+//             }  
         
-            return tuple(sites_file, sites_file_index); 
-    }
+//             return tuple(sites_file, sites_file_index); 
+//     }
 
 include { INPUT_VALIDATION } from './workflows/input_validation'
 include { QUALITY_CONTROL } from './workflows/quality_control'
@@ -90,7 +90,7 @@ workflow {
         QUALITY_CONTROL(
             INPUT_VALIDATION.out.validated_files,
             INPUT_VALIDATION.out.validation_report,
-            site_files_ch.collect()
+            // site_files_ch.collect()
         )
        
        // check if QC chunks exist in case QC failed
