@@ -33,7 +33,7 @@ process BEAGLE {
         chrom=${chr_mapped}:${phasing_start}-${phasing_end} \\
         map=${map_beagle} \\
         impute=${impute_param} \\
-        window=${window} \\
+        window=${window}
 
     # for every phased.vcf.gz file, remove sites with DR2 < 0.8
     for file in *.phased.vcf.gz; do
