@@ -25,7 +25,7 @@ process BEAGLE {
     def impute_param = params.phasing.impute ? 'true' : 'false'
 
     """
-    java -Xmx$max_memory -jar /usr/bin/beagle.06Aug24.a91.jar \\
+    java -Xmx$max_memory -jar /usr/bin/beagle.29Oct24.c8e.jar \\
         ref=${bcf}  \\
         gt=${chunkfile} \\
         out=${chunkfile_name}.phased \\
