@@ -19,7 +19,7 @@ process BEAGLE {
     def phasing_end = end.toLong() + params.phasing.window
     def num_threads = 4
     def window = params.phasing.window
-    def max_memory = '16G'
+    def max_memory = '7G'
 
     // Set impute parameter based on params.phasing.impute
     def impute_param = params.phasing.impute ? 'true' : 'false'
