@@ -26,7 +26,7 @@ RUN wget https://storage.googleapis.com/broad-alkesgroup-public/Eagle/downloads/
     mv Eagle_v${EAGLE_VERSION}/eagle /usr/bin/.
 
 # Install beagle
-ENV BEAGLE_VERSION=27May24.118
+ENV BEAGLE_VERSION=29Oct24.c8e
 WORKDIR "/opt"
 RUN wget https://faculty.washington.edu/browning/beagle/beagle.${BEAGLE_VERSION}.jar && \
     mv beagle.${BEAGLE_VERSION}.jar /usr/bin/.

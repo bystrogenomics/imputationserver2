@@ -27,7 +27,9 @@ If you encounter any problems, feel free to open an issue [here](https://github.
 
 ## Version History
 
-[Version 2.0.3 - Version 2.0.6](https://github.com/bystrogenomics/imputationserver2/releases/tag/v2.0.7) - Fix QC issues and remove HTSJDK index creation for input validation and QC.
+[Version 2.0.7 - Version 2.0.8](https://github.com/bystrogenomics/imputationserver2/releases/tag/v2.0.8) - Use Beagle version 29Oct24.c8e with better handling of variants with identical genetic map marker positiosn. Add robust pre-processing of VCF files to handle non-compliant VCFs (e.g. multiple chromosomes in one file, or unsorted file).
+
+[Version 2.0.3 - Version 2.0.6](https://github.com/bystrogenomics/imputationserver2/releases/tag/v2.0.8) - Fix QC issues and remove HTSJDK index creation for input validation and QC.
 
 [Version 2.0.2](https://github.com/bystrogenomics/imputationserver2/releases/tag/v2.0.2) - Set minimac4 tmp directory (required for larger sample sizes).
 

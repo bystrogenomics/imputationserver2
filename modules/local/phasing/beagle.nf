@@ -18,19 +18,22 @@ process BEAGLE {
     phasing_start = phasing_start < 0 ? 1 : phasing_start
     def phasing_end = end.toLong() + params.phasing.window
     def num_threads = 4
+    def window = params.phasing.window
+    def max_memory = '16G'
 
     // Set impute parameter based on params.phasing.impute
     def impute_param = params.phasing.impute ? 'true' : 'false'
 
     """
-    java -jar /usr/bin/beagle.27May24.118.jar \\
+    java -Xmx$max_memory -jar /usr/bin/beagle.06Aug24.a91.jar \\
         ref=${bcf}  \\
         gt=${chunkfile} \\
         out=${chunkfile_name}.phased \\
         nthreads=$num_threads \\
         chrom=${chr_mapped}:${phasing_start}-${phasing_end} \\
         map=${map_beagle} \\
-        impute=${impute_param}
+        impute=${impute_param} \\
+        window=${window} \\
 
     # for every phased.vcf.gz file, remove sites with DR2 < 0.8
     for file in *.phased.vcf.gz; do
