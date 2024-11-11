@@ -1,5 +1,4 @@
 process QUALITY_CONTROL_REPORT {
-    
     label 'preprocessing'
     publishDir params.output, mode: 'copy'
 
@@ -10,10 +9,11 @@ process QUALITY_CONTROL_REPORT {
     path(qc_report_file)
 
     output:
-    path("*.html")
+    path('*.html')
 
     script:
     """
+    echo "maf_file: ${maf_file}"
     Rscript -e "require( 'rmarkdown' ); render('${qc_report_file}',
         params = list(
             maf_file = '${maf_file}',
@@ -30,5 +30,4 @@ process QUALITY_CONTROL_REPORT {
         output_file='\$PWD/quality-control.html'
     )"
     """
-
 }

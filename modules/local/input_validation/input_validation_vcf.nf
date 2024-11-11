@@ -9,8 +9,8 @@ process INPUT_VALIDATION_VCF {
     path vcf_files
 
     output:
-    path("split_vcfs/*.vcf.gz"), emit: validated_files
-    path("skipped_vcfs/*.vcf.gz"), emit: skipped_files, optional: true
+    path("validated_vcfs/*.vcf.gz"), emit: validated_files
+    path("skipped_vcfs/*.vcf.gz"), emit: skipped_files
     path("validation_report.txt"), emit: validation_report
 
     script:
@@ -42,7 +42,7 @@ EOF
     skipped_vcfs=()
 
     # Create the directories for split VCF files
-    mkdir -p split_vcfs skipped_vcfs
+    mkdir -p split_vcfs skipped_vcfs validated_vcfs
 
     # Process each VCF file
     for vcf in ${vcf_files}; do
@@ -159,23 +159,34 @@ EOF
         base=\$(basename "\$f")
         if [[ "\$base" =~ _([1-9]|1[0-9]|2[0-2]|X|chr([1-9]|1[0-9]|2[0-2]|X))\\.vcf\\.gz\$ ]]; then
             vcf_files_to_validate+=("\$f")
+            mv "\$f" validated_vcfs/
+
+            if [ -f "\$f.csi" ] || [ -f "\$f.tbi" ]; then
+                mv "\$f".csi validated_vcfs/
+                mv "\$f".tbi validated_vcfs/
+            fi
         else
             skipped_vcfs+=("\$f")
+            mv "\$f" skipped_vcfs/
+
+            if [ -f "\$f.csi" ] || [ -f "\$f.tbi" ]; then
+                mv "\$f".csi skipped_vcfs/
+                mv "\$f".tbi skipped_vcfs/
+            fi
         fi
     done
 
-    for f in "\${skipped_vcfs[@]}"; do
-        mv "\$f.*" skipped_vcfs/
-    done
+    final_skip_files=(skipped_vcfs/*.vcf.gz)
 
-    echo "VCF files to validate:"
-    printf '%s\\n' "\${vcf_files_to_validate[@]}"
+    # get the final_vcf_files_to_validate by globbing
 
-    echo "Skipped VCF files:"
-    printf '%s\\n' "\${skipped_vcfs[@]}"
+    final_vcf_files_to_validate=(validated_vcfs/*.vcf.gz)
+
+    echo "skipped_vcfs: \${final_skip_files[@]}"
+    echo "validated_vcfs: \${final_vcf_files_to_validate[@]}"
 
     # Run the validation program only if there are files to validate
-    if [ \${#vcf_files_to_validate[@]} -gt 0 ]; then
+    if [ \${#final_vcf_files_to_validate[@]} -gt 0 ]; then
         java -Xmx${avail_mem}M -jar /opt/imputationserver-utils/imputationserver-utils.jar \\
             validate \\
             --population ${params.population} \\
@@ -189,7 +200,7 @@ EOF
             --no-index \\
             --contactName "${contactName}" \\
             --contactEmail "${contactEmail}" \\
-            "\${vcf_files_to_validate[@]}"
+            "\${final_vcf_files_to_validate[@]}"
         exit_code_a=\$?
     else
         echo "No VCF files to validate."

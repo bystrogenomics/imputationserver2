@@ -2,16 +2,14 @@ include { INPUT_VALIDATION_VCF } from '../modules/local/input_validation/input_v
 
 Channel
     .fromPath(params.files)
-    .set {files}
+    .set { files }
 
 workflow INPUT_VALIDATION {
-    
     main:
     INPUT_VALIDATION_VCF(files.collect())
 
     emit:
     validated_files = INPUT_VALIDATION_VCF.out.validated_files.collect()
+    skipped_files = INPUT_VALIDATION_VCF.out.skipped_files.collect()
     validation_report = INPUT_VALIDATION_VCF.out.validation_report
 }
-
-

@@ -199,13 +199,21 @@ process MERGE_ALL_PHASED_VCF {
 process COPY_SKIPPED_VCFS {
     label 'copy_skipped_vcfs'
 
-    publishDir "${params.output}/final_vcf", mode: 'copy'
+    publishDir params.output, mode: 'copy'
 
     input:
-    file(skipped_files)
+    path(skipped_files)
+
+    output:
+    path('final_vcf/*'), emit: skipped_files
 
     script:
     """
+    mkdir final_vcf
+    for f in ${skipped_files}; do
+        mv \$f final_vcf/
+
+    done
     echo "Copying skipped VCF file: ${skipped_files}"
     """
 }
@@ -214,18 +222,17 @@ workflow {
     println "Welcome to ${params.service.name} (${workflow.manifest.version})"
 
     if (params.imputation.enabled) {
-        INPUT_VALIDATION()
+        def input_validation = INPUT_VALIDATION()
 
-        // Copy skipped VCFs to the final output directory's subdirectory 'final_vcfs'
-        // COPY_SKIPPED_VCFS(
-        //     INPUT_VALIDATION.out.skipped_files
-        // )
-
-        // Proceed with quality control on validated files
+        // Pass outputs to QUALITY_CONTROL
         QUALITY_CONTROL(
-            INPUT_VALIDATION.out.validated_files,
-            INPUT_VALIDATION.out.validation_report,
-            site_files_ch
+            input_validation.validated_files,
+            input_validation.validation_report,
+            site_files_ch.collect()
+        )
+
+        COPY_SKIPPED_VCFS(
+            input_validation.skipped_files.collect()
         )
 
         // Check if QC chunks exist in case QC failed
@@ -235,7 +242,6 @@ workflow {
 
         if (params.mode == 'imputation') {
             def phased_ch = QUALITY_CONTROL.out.qc_metafiles
-
             if (phasing_engine != 'no_phasing') {
                 PHASING(
                     QUALITY_CONTROL.out.qc_metafiles
@@ -249,16 +255,16 @@ workflow {
                     phased_ch
                 )
 
-                if (params.merge_results == true) {
+                if (params.merge_results) {
                     ENCRYPTION(
-                        IMPUTATION.out.groupTuple()
-                    )
+                    IMPUTATION.out.groupTuple()
+                )
                 }
-            } else {
-                if (params.merge_results == true) {
+        } else {
+                if (params.merge_results) {
                     MERGE_ALL_PHASED_VCF(
-                        phased_ch.groupTuple()
-                    )
+                    phased_ch.groupTuple()
+                )
                 }
             }
         }
