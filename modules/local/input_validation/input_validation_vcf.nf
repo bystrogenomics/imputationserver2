@@ -10,6 +10,7 @@ process INPUT_VALIDATION_VCF {
 
     output:
     path("split_vcfs/*.vcf.gz"), emit: validated_files
+    path("skipped_vcfs/*.vcf.gz"), emit: skipped_files, optional: true
     path("validation_report.txt"), emit: validation_report
 
     script:
@@ -35,11 +36,13 @@ process INPUT_VALIDATION_VCF {
 ${refpanel_json}
 EOF
 
-    # Initialize an array to hold split VCF files
+    # Initialize arrays to hold split VCF files
     split_vcfs=()
+    vcf_files_to_validate=()
+    skipped_vcfs=()
 
-    # Create the directory for split VCF files
-    mkdir -p split_vcfs
+    # Create the directories for split VCF files
+    mkdir -p split_vcfs skipped_vcfs
 
     # Process each VCF file
     for vcf in ${vcf_files}; do
@@ -120,7 +123,7 @@ EOF
         if [ "\$num_chromosomes" -eq 1 ]; then
             # Only one chromosome, skip splitting and sorting
             echo "Only one chromosome detected (\$chromosomes). Skipping split and sort."
-            output_vcf="split_vcfs/\${base_name}.vcf.gz"
+            output_vcf="split_vcfs/\${base_name}_\$chromosomes.vcf.gz"
             cp "\$vcf" "\$output_vcf"
             # Index the output VCF if necessary
             if [ ! -f "\$output_vcf.csi" ] && [ ! -f "\$output_vcf.tbi" ]; then
@@ -144,25 +147,56 @@ EOF
     done
 
     # Now we can use the split_vcfs array
-    echo "Validated VCF files:"
+    echo "All split VCF files:"
     printf '%s\\n' "\${split_vcfs[@]}"
 
-    # Run the validation program
-    java -Xmx${avail_mem}M -jar /opt/imputationserver-utils/imputationserver-utils.jar \\
-        validate \\
-        --population ${params.population} \\
-        --phasing ${params.phasing.engine} \\
-        --reference reference-panel.json \\
-        --build ${params.build} \\
-        --mode ${params.mode} \\
-        --minSamples ${params.min_samples} \\
-        --maxSamples ${params.max_samples} \\
-        --report validation_report.txt \\
-        --no-index \\
-        --contactName "${contactName}" \\
-        --contactEmail "${contactEmail}" \\
-        "\${split_vcfs[@]}"
-    exit_code_a=\$?
+    # Initialize arrays for files to validate and skipped files
+    vcf_files_to_validate=()
+    skipped_vcfs=()
+
+    # Filter the split_vcfs array to only include files matching the pattern
+    for f in "\${split_vcfs[@]}"; do
+        base=\$(basename "\$f")
+        if [[ "\$base" =~ _([1-9]|1[0-9]|2[0-2]|X|chr([1-9]|1[0-9]|2[0-2]|X))\\.vcf\\.gz\$ ]]; then
+            vcf_files_to_validate+=("\$f")
+        else
+            skipped_vcfs+=("\$f")
+        fi
+    done
+
+    for f in "\${skipped_vcfs[@]}"; do
+        mv "\$f.*" skipped_vcfs/
+    done
+
+    echo "VCF files to validate:"
+    printf '%s\\n' "\${vcf_files_to_validate[@]}"
+
+    echo "Skipped VCF files:"
+    printf '%s\\n' "\${skipped_vcfs[@]}"
+
+    # Run the validation program only if there are files to validate
+    if [ \${#vcf_files_to_validate[@]} -gt 0 ]; then
+        java -Xmx${avail_mem}M -jar /opt/imputationserver-utils/imputationserver-utils.jar \\
+            validate \\
+            --population ${params.population} \\
+            --phasing ${params.phasing.engine} \\
+            --reference reference-panel.json \\
+            --build ${params.build} \\
+            --mode ${params.mode} \\
+            --minSamples ${params.min_samples} \\
+            --maxSamples ${params.max_samples} \\
+            --report validation_report.txt \\
+            --no-index \\
+            --contactName "${contactName}" \\
+            --contactEmail "${contactEmail}" \\
+            "\${vcf_files_to_validate[@]}"
+        exit_code_a=\$?
+    else
+        echo "No VCF files to validate."
+        # Create an empty validation report
+        touch validation_report.txt
+        exit_code_a=0
+    fi
 
     cat validation_report.txt
     exit \$exit_code_a

@@ -196,25 +196,46 @@ process MERGE_ALL_PHASED_VCF {
     """
 }
 
+process COPY_SKIPPED_VCFS {
+    label 'copy_skipped_vcfs'
+
+    publishDir "${params.output}/final_vcf", mode: 'copy'
+
+    input:
+    file(skipped_files)
+
+    script:
+    """
+    echo "Copying skipped VCF file: ${skipped_files}"
+    """
+}
+
 workflow {
     println "Welcome to ${params.service.name} (${workflow.manifest.version})"
 
     if (params.imputation.enabled) {
         INPUT_VALIDATION()
 
+        // Copy skipped VCFs to the final output directory's subdirectory 'final_vcfs'
+        // COPY_SKIPPED_VCFS(
+        //     INPUT_VALIDATION.out.skipped_files
+        // )
+
+        // Proceed with quality control on validated files
         QUALITY_CONTROL(
             INPUT_VALIDATION.out.validated_files,
             INPUT_VALIDATION.out.validation_report,
-            site_files_ch.collect()
+            site_files_ch
         )
 
-        // check if QC chunks exist in case QC failed
+        // Check if QC chunks exist in case QC failed
         QUALITY_CONTROL.out.qc_metafiles.ifEmpty {
-                error 'QC step failed'
+            error 'QC step failed'
         }
 
         if (params.mode == 'imputation') {
-            phased_ch =  QUALITY_CONTROL.out.qc_metafiles
+            def phased_ch = QUALITY_CONTROL.out.qc_metafiles
+
             if (phasing_engine != 'no_phasing') {
                 PHASING(
                     QUALITY_CONTROL.out.qc_metafiles
@@ -228,13 +249,13 @@ workflow {
                     phased_ch
                 )
 
-                if (params.merge_results === true) {
+                if (params.merge_results == true) {
                     ENCRYPTION(
                         IMPUTATION.out.groupTuple()
                     )
                 }
             } else {
-                if (params.merge_results === true) {
+                if (params.merge_results == true) {
                     MERGE_ALL_PHASED_VCF(
                         phased_ch.groupTuple()
                     )
