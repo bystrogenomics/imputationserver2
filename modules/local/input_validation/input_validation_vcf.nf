@@ -10,7 +10,7 @@ process INPUT_VALIDATION_VCF {
 
     output:
     path("validated_vcfs/*.vcf.gz"), emit: validated_files
-    path("skipped_vcfs/*.vcf.gz"), emit: skipped_files
+    path("skipped_vcfs/*.vcf.gz"), emit: skipped_files, optional: true
     path("validation_report.txt"), emit: validation_report
 
     script:
@@ -161,17 +161,23 @@ EOF
             vcf_files_to_validate+=("\$f")
             mv "\$f" validated_vcfs/
 
-            if [ -f "\$f.csi" ] || [ -f "\$f.tbi" ]; then
-                mv "\$f".csi validated_vcfs/
-                mv "\$f".tbi validated_vcfs/
+            if [ -f "\$f.csi" ] ; then
+                mv "\$f.csi" validated_vcfs/
+            fi
+
+            if [ -f "\$f.tbi" ]; then
+                mv "\$f.tbi" validated_vcfs/
             fi
         else
             skipped_vcfs+=("\$f")
             mv "\$f" skipped_vcfs/
 
-            if [ -f "\$f.csi" ] || [ -f "\$f.tbi" ]; then
-                mv "\$f".csi skipped_vcfs/
-                mv "\$f".tbi skipped_vcfs/
+            if [ -f "\$f.csi" ] ; then
+                mv "\$f.csi" skipped_vcfs/
+            fi
+
+            if [ -f "\$f.tbi" ]; then
+                mv "\$f.tbi" skipped_vcfs/
             fi
         fi
     done
